@@ -1,0 +1,2449 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Karyawan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .status-online {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            z-index: 50;
+        }
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 12px;
+            position: relative;
+        }
+        .calendar-day.has-request {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        .request-name {
+            position: absolute;
+            bottom: 2px;
+            font-size: 8px;
+            color: #92400e;
+        }
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .mobile-safe-area {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        @media (max-width: 768px) {
+            .mobile-optimized {
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body class="h-full bg-gray-50">
+    <div id="app" class="h-full">
+        <!-- Login Page -->
+        <div id="loginPage" class="min-h-full flex items-center justify-center px-4 py-12">
+            <div class="max-w-md w-full space-y-8">
+                <div class="text-center">
+                    <div id="logoContainer" class="mx-auto h-20 w-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-building text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-900">Sistem Absensi</h2>
+                    <p class="mt-2 text-gray-600">Masuk ke akun Anda</p>
+                </div>
+                <form id="loginForm" class="mt-8 space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input id="email" name="email" type="email" required 
+                                   class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Masukkan email Anda">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input id="password" name="password" type="password" required 
+                                   class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Masukkan password Anda">
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-200">
+                            Masuk
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <a href="#" class="text-blue-600 hover:text-blue-500 text-sm">Lupa password?</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Employee Dashboard -->
+        <div id="employeeDashboard" class="hidden min-h-full bg-gray-50 pb-20 md:pb-0">
+            <!-- Modern Mobile Header -->
+            <div class="relative overflow-hidden">
+                <!-- Status Bar Simulation -->
+                <div class="flex justify-between items-center px-4 pt-2 pb-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs md:hidden">
+                    <div class="flex items-center space-x-1">
+                        <div class="flex space-x-1">
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                        </div>
+                        <span class="ml-2">Absensi App</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <span id="currentTimeEmployee"></span>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- Gradient Header -->
+                <div class="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white p-4 pt-6 md:pt-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <div id="employeeAvatar" class="w-16 h-16 md:w-18 md:h-18 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white border-opacity-30">
+                                    <i class="fas fa-user text-white text-xl"></i>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white status-online"></div>
+                            </div>
+                            <div>
+                                <h1 class="text-xl md:text-2xl font-bold" id="employeeName">Selamat datang</h1>
+                                <p class="text-sm md:text-base text-white text-opacity-90" id="employeeShift">Shift 1 • 07:30 - 15:00</p>
+                                <div class="flex items-center mt-1 text-xs text-white text-opacity-75">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    <span id="currentDateEmployee"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="employeeProfileBtn" class="p-3 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl border border-white border-opacity-30 hover:bg-opacity-30 transition-all duration-200">
+                            <i class="fas fa-cog text-white"></i>
+                        </button>
+                    </div>
+
+                    <!-- Status Card in Header -->
+                    <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border border-white border-opacity-30">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-white text-opacity-90 text-sm">Status Hari Ini</p>
+                                <p class="text-xl font-bold text-white" id="todayStatus">Belum Absen</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 rounded-full bg-gray-400" id="statusIndicator"></div>
+                                <i class="fas fa-chevron-right text-white text-opacity-60"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="p-4 -mt-4 relative z-10">
+                <!-- Primary Action Buttons -->
+                <div class="grid grid-cols-1 gap-3 mb-6">
+                    <button id="absenBtn" class="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white p-6 rounded-2xl font-medium transition-all duration-200 shadow-lg mobile-optimized">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
+                                    <i class="fas fa-clock text-2xl"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="text-lg font-semibold">Absen Masuk</h3>
+                                    <p class="text-sm text-green-100">Tap untuk absen masuk</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-arrow-right text-xl opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                        </div>
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="istirahatBtn" class="group bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white p-4 rounded-2xl font-medium transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mobile-optimized" disabled>
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-coffee text-lg"></i>
+                                </div>
+                                <h3 class="text-sm font-semibold">Istirahat</h3>
+                            </div>
+                        </button>
+
+                        <button id="selesaiBtn" class="group bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white p-4 rounded-2xl font-medium transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mobile-optimized" disabled>
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-sign-out-alt text-lg"></i>
+                                </div>
+                                <h3 class="text-sm font-semibold">Selesai</h3>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Section -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                        Aksi Cepat
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="requestLiburBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-200 mobile-optimized">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
+                                    <i class="fas fa-calendar-plus text-blue-600 text-lg"></i>
+                                </div>
+                                <h3 class="font-medium text-gray-800 text-sm">Request</h3>
+                                <p class="text-xs text-gray-500">Libur</p>
+                            </div>
+                        </button>
+                        
+                        <button id="viewScheduleBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all duration-200 mobile-optimized">
+                            <div class="text-center">
+                                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-200 transition-colors">
+                                    <i class="fas fa-calendar text-purple-600 text-lg"></i>
+                                </div>
+                                <h3 class="font-medium text-gray-800 text-sm">Jadwal</h3>
+                                <p class="text-xs text-gray-500">Tim</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Team Status Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-users text-gray-600 mr-2"></i>
+                            Status Tim Hari Ini
+                        </h3>
+                        <button class="text-blue-600 text-sm font-medium hover:text-blue-700">
+                            Lihat Semua
+                        </button>
+                    </div>
+                    <div id="teamStatus" class="space-y-3">
+                        <!-- Team status will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-history text-gray-600 mr-2"></i>
+                        Aktivitas Terbaru
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-green-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Absen masuk berhasil</p>
+                                <p class="text-xs text-gray-500">Hari ini, 08:00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern Mobile Navigation -->
+            <div class="mobile-nav bg-white border-t border-gray-200 p-4 mobile-safe-area">
+                <div class="flex justify-around">
+                    <button class="flex flex-col items-center text-blue-600 mobile-optimized">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-home text-lg"></i>
+                        </div>
+                        <span class="text-xs font-medium">Beranda</span>
+                    </button>
+                    <button id="scheduleNavBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600 mobile-optimized">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-calendar text-lg"></i>
+                        </div>
+                        <span class="text-xs">Jadwal</span>
+                    </button>
+                    <button id="profileNavBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600 mobile-optimized">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-user text-lg"></i>
+                        </div>
+                        <span class="text-xs">Profil</span>
+                    </button>
+                    <button id="notificationNavBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600 mobile-optimized">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center relative">
+                            <i class="fas fa-bell text-lg"></i>
+                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                        </div>
+                        <span class="text-xs">Notifikasi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden min-h-full bg-gray-50 pb-20 md:pb-0">
+            <!-- Modern Admin Header -->
+            <div class="relative overflow-hidden">
+                <!-- Background with gradient and pattern -->
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700"></div>
+                <div class="absolute inset-0 bg-black bg-opacity-10"></div>
+                <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="2"/></g></svg>'); background-size: 60px 60px;"></div>
+                
+                <div class="relative p-4 pt-8 md:p-6">
+                    <!-- Status Bar Simulation for Mobile -->
+                    <div class="flex justify-between items-center mb-4 md:hidden">
+                        <div class="flex items-center space-x-1">
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                            <div class="w-1 h-1 bg-white rounded-full"></div>
+                            <span class="text-white text-xs ml-2">Admin Panel</span>
+                        </div>
+                        <div class="flex items-center space-x-1 text-white text-xs">
+                            <i class="fas fa-signal"></i>
+                            <i class="fas fa-wifi"></i>
+                            <i class="fas fa-battery-three-quarters"></i>
+                        </div>
+                    </div>
+
+                    <!-- Header Content -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <div id="adminAvatar" class="w-14 h-14 md:w-16 md:h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white border-opacity-30">
+                                    <i class="fas fa-user-shield text-white text-xl md:text-2xl"></i>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+                            </div>
+                            <div>
+                                <h1 class="text-xl md:text-2xl font-bold text-white">Dashboard Admin</h1>
+                                <p class="text-sm md:text-base text-white text-opacity-90">Kelola sistem absensi</p>
+                                <div class="flex items-center mt-1 text-xs text-white text-opacity-75">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    <span id="currentTime"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex items-center space-x-2">
+                            <button id="adminSettingsBtn" class="p-3 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl border border-white border-opacity-30 hover:bg-opacity-30 transition-all duration-200">
+                                <i class="fas fa-cog text-white"></i>
+                            </button>
+                            <div class="relative">
+                                <button id="adminMenuBtn" class="p-3 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl border border-white border-opacity-30 hover:bg-opacity-30 transition-all duration-200">
+                                    <i class="fas fa-ellipsis-v text-white"></i>
+                                </button>
+                                <!-- Dropdown Menu -->
+                                <div id="adminDropdown" class="hidden absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+                                    <div class="p-2">
+                                        <button id="adminProfileBtn" class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg flex items-center">
+                                            <i class="fas fa-user mr-3 text-gray-500"></i>
+                                            Profil Admin
+                                        </button>
+                                        <button id="adminLogoutBtn" class="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center">
+                                            <i class="fas fa-sign-out-alt mr-3"></i>
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats Cards -->
+                    <div class="grid grid-cols-3 gap-3 mt-6">
+                        <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border border-white border-opacity-30">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl md:text-3xl font-bold text-white" id="presentCount">0</p>
+                                    <p class="text-xs md:text-sm text-white text-opacity-90">Hadir</p>
+                                </div>
+                                <div class="w-10 h-10 bg-green-400 bg-opacity-30 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-check text-green-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border border-white border-opacity-30">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl md:text-3xl font-bold text-white" id="breakCount">0</p>
+                                    <p class="text-xs md:text-sm text-white text-opacity-90">Istirahat</p>
+                                </div>
+                                <div class="w-10 h-10 bg-orange-400 bg-opacity-30 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-coffee text-orange-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 border border-white border-opacity-30">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl md:text-3xl font-bold text-white" id="lateCount">0</p>
+                                    <p class="text-xs md:text-sm text-white text-opacity-90">Terlambat</p>
+                                </div>
+                                <div class="w-10 h-10 bg-red-400 bg-opacity-30 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-clock text-red-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="p-4 md:p-6 -mt-4 relative z-10">
+                <!-- Quick Actions Section -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                        Aksi Cepat
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button id="addEmployeeBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-200">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
+                                <i class="fas fa-user-plus text-blue-600 text-lg"></i>
+                            </div>
+                            <h3 class="font-medium text-gray-800 text-sm">Tambah</h3>
+                            <p class="text-xs text-gray-500">Karyawan</p>
+                        </button>
+                        
+                        <button id="viewLateEmployeesBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 transition-all duration-200">
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-red-200 transition-colors">
+                                <i class="fas fa-clock text-red-600 text-lg"></i>
+                            </div>
+                            <h3 class="font-medium text-gray-800 text-sm">Terlambat</h3>
+                            <p class="text-xs text-gray-500">Karyawan</p>
+                        </button>
+                        
+                        <button id="exportDataBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-indigo-200 transition-all duration-200">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-indigo-200 transition-colors">
+                                <i class="fas fa-download text-indigo-600 text-lg"></i>
+                            </div>
+                            <h3 class="font-medium text-gray-800 text-sm">Export</h3>
+                            <p class="text-xs text-gray-500">Data</p>
+                        </button>
+                        
+                        <button id="viewAttendanceBtn" class="group bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all duration-200">
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
+                                <i class="fas fa-chart-bar text-purple-600 text-lg"></i>
+                            </div>
+                            <h3 class="font-medium text-gray-800 text-sm">Data</h3>
+                            <p class="text-xs text-gray-500">Absensi</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Management Section -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-cogs text-green-600 mr-2"></i>
+                        Manajemen
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="manageScheduleBtn" class="group bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="text-left">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fas fa-calendar-alt text-2xl mr-3"></i>
+                                        <h3 class="text-lg font-semibold">Kelola Jadwal</h3>
+                                    </div>
+                                    <p class="text-sm text-green-100">Atur jadwal kerja karyawan</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-xl opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                            </div>
+                        </button>
+                        
+                        <button id="holidayRequestsBtn" class="group bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl p-6 text-white hover:from-orange-600 hover:to-amber-700 transition-all duration-200 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="text-left">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fas fa-calendar-check text-2xl mr-3"></i>
+                                        <h3 class="text-lg font-semibold">Request Libur</h3>
+                                    </div>
+                                    <p class="text-sm text-orange-100">Kelola permintaan cuti</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-xl opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-history text-gray-600 mr-2"></i>
+                            Aktivitas Terbaru
+                        </h2>
+                        <button class="text-blue-600 text-sm font-medium hover:text-blue-700">
+                            Lihat Semua
+                        </button>
+                    </div>
+                    <div id="recentActivity" class="space-y-3">
+                        <!-- Recent activity items will be populated here -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-green-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Andi Pratama absen masuk</p>
+                                <p class="text-xs text-gray-500">2 menit yang lalu</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-coffee text-orange-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Sari Dewi mulai istirahat</p>
+                                <p class="text-xs text-gray-500">15 menit yang lalu</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Bottom Navigation -->
+            <div class="mobile-nav md:hidden bg-white border-t border-gray-200 p-4">
+                <div class="flex justify-around">
+                    <button class="flex flex-col items-center text-blue-600">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-home text-lg"></i>
+                        </div>
+                        <span class="text-xs font-medium">Beranda</span>
+                    </button>
+                    <button id="mobileStatsBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-chart-line text-lg"></i>
+                        </div>
+                        <span class="text-xs">Statistik</span>
+                    </button>
+                    <button id="mobileEmployeesBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-users text-lg"></i>
+                        </div>
+                        <span class="text-xs">Karyawan</span>
+                    </button>
+                    <button id="mobileSettingsBtn" class="flex flex-col items-center text-gray-400 hover:text-gray-600">
+                        <div class="w-6 h-6 mb-1 flex items-center justify-center">
+                            <i class="fas fa-cog text-lg"></i>
+                        </div>
+                        <span class="text-xs">Pengaturan</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Profile Modal -->
+        <div id="employeeProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Profil Saya</h3>
+                    <button id="closeEmployeeProfile" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
+                        <i class="fas fa-user text-gray-400 text-2xl"></i>
+                    </div>
+                    <button class="text-blue-600 text-sm">Ubah Foto Profil</button>
+                </div>
+                <div class="space-y-4">
+                    <button class="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-key mr-3 text-gray-600"></i>
+                        Ubah Password
+                    </button>
+                    <button id="employeeLogoutBtn" class="w-full text-left p-3 bg-red-50 rounded-lg hover:bg-red-100 text-red-600">
+                        <i class="fas fa-sign-out-alt mr-3"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Employee Modal -->
+        <div id="addEmployeeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Tambah Karyawan Baru</h3>
+                    <button id="closeAddEmployee" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="addEmployeeForm" class="space-y-4">
+                    <div>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" id="fullName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                        <textarea id="address" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <label for="position" class="block text-sm font-medium text-gray-700 mb-1">Jabatan</label>
+                        <input type="text" id="position" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="employeeEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="employeeEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+                        <input type="tel" id="phoneNumber" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="employeePassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="employeePassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium">
+                        Simpan Karyawan
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Schedule Management Modal -->
+        <div id="scheduleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Kelola Jadwal Karyawan</h3>
+                    <button id="closeSchedule" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4 flex space-x-2">
+                    <button id="saveScheduleBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-save mr-2"></i>Simpan Jadwal
+                    </button>
+                    <button id="exportScheduleBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-download mr-2"></i>Export PDF
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Nama</th>
+                                <th class="border border-gray-300 p-2 text-left">Jabatan</th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate1"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate2"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate3"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate4"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate5"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate6"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate7"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate8"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate9"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="scheduleDate10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody">
+                            <!-- Schedule rows will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holiday Request Modal -->
+        <div id="holidayRequestModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Request Tanggal Libur</h3>
+                    <button id="closeHolidayRequest" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Tanggal</label>
+                    <input type="date" id="holidayDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-medium mb-2">Kalender Request Libur</h4>
+                    <div class="calendar-grid text-xs">
+                        <div class="text-center font-medium p-1">Min</div>
+                        <div class="text-center font-medium p-1">Sen</div>
+                        <div class="text-center font-medium p-1">Sel</div>
+                        <div class="text-center font-medium p-1">Rab</div>
+                        <div class="text-center font-medium p-1">Kam</div>
+                        <div class="text-center font-medium p-1">Jum</div>
+                        <div class="text-center font-medium p-1">Sab</div>
+                    </div>
+                    <div id="holidayCalendar" class="calendar-grid mt-2">
+                        <!-- Calendar days will be populated here -->
+                    </div>
+                </div>
+                
+                <button id="submitHolidayRequest" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium">
+                    Submit Request
+                </button>
+            </div>
+        </div>
+
+        <!-- Google Authenticator Modal -->
+        <div id="authenticatorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Verifikasi Google Authenticator</h3>
+                    <button id="closeAuthenticator" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Masukkan kode 6 digit dari Google Authenticator</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="authCode" class="block text-sm font-medium text-gray-700 mb-2">Kode Verifikasi</label>
+                    <input type="text" id="authCode" maxlength="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl font-mono tracking-widest" placeholder="000000">
+                </div>
+                
+                <button id="verifyAuthCode" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium">
+                    <i class="fas fa-check mr-2"></i>Verifikasi
+                </button>
+            </div>
+        </div>
+
+        <!-- Break Selection Modal -->
+        <div id="breakSelectionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Pilih Jenis Istirahat</h3>
+                    <button id="closeBreakSelection" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div id="breakOptions" class="space-y-3">
+                    <!-- Break options will be populated based on shift -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Settings Modal -->
+        <div id="adminSettingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Pengaturan Sistem</h3>
+                    <button id="closeAdminSettings" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Logo Login</label>
+                        <input type="file" id="logoUpload" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">Logo akan otomatis diterapkan ke halaman login</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Background Website</label>
+                        <input type="file" id="backgroundUpload" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">Background akan otomatis diterapkan ke seluruh website</p>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button id="applyChanges" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm">
+                            <i class="fas fa-check mr-2"></i>Terapkan Perubahan
+                        </button>
+                        <button id="resetSettings" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg text-sm">
+                            <i class="fas fa-undo mr-2"></i>Reset
+                        </button>
+                    </div>
+                    
+                    <div class="border-t pt-4">
+                        <h4 class="font-medium mb-2">Export Data</h4>
+                        <div class="flex space-x-2">
+                            <button id="exportExcel" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm">
+                                <i class="fas fa-file-excel mr-2"></i>Excel
+                            </button>
+                            <button id="exportPDF" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm">
+                                <i class="fas fa-file-pdf mr-2"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule View Modal (Employee) -->
+        <div id="employeeScheduleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Jadwal Tim</h3>
+                    <button id="closeEmployeeSchedule" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Nama</th>
+                                <th class="border border-gray-300 p-2 text-left">Jabatan</th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate1"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate2"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate3"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate4"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate5"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate6"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate7"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate8"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate9"></th>
+                                <th class="border border-gray-300 p-2 text-center" id="empScheduleDate10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="empScheduleTableBody">
+                            <!-- Schedule rows will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Data Modal -->
+        <div id="attendanceDataModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Data Absensi & Keterlambatan</h3>
+                    <button id="closeAttendanceData" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <select id="attendanceFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                    </select>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Nama</th>
+                                <th class="border border-gray-300 p-2 text-left">Tanggal</th>
+                                <th class="border border-gray-300 p-2 text-center">Absen Masuk</th>
+                                <th class="border border-gray-300 p-2 text-center">Istirahat</th>
+                                <th class="border border-gray-300 p-2 text-center">Selesai</th>
+                                <th class="border border-gray-300 p-2 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <!-- Attendance data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Late Employees Modal -->
+        <div id="lateEmployeesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Karyawan Terlambat</h3>
+                    <button id="closeLateEmployees" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <select id="lateFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                    </select>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-red-100">
+                                <th class="border border-gray-300 p-2 text-left">Nama</th>
+                                <th class="border border-gray-300 p-2 text-left">Jabatan</th>
+                                <th class="border border-gray-300 p-2 text-left">Tanggal</th>
+                                <th class="border border-gray-300 p-2 text-center">Shift</th>
+                                <th class="border border-gray-300 p-2 text-center">Seharusnya Masuk</th>
+                                <th class="border border-gray-300 p-2 text-center">Waktu Absen</th>
+                                <th class="border border-gray-300 p-2 text-center">Terlambat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lateEmployeesTableBody">
+                            <!-- Late employees data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Profile Modal -->
+        <div id="adminProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Profil Admin</h3>
+                    <button id="closeAdminProfile" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
+                        <i class="fas fa-user-shield text-gray-400 text-2xl"></i>
+                    </div>
+                    <button class="text-blue-600 text-sm">Ubah Foto Profil</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                        <input type="text" id="adminName" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="Administrator">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="adminEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="admin@gmail.com" readonly>
+                    </div>
+                    <button class="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-key mr-3 text-gray-600"></i>
+                        Ubah Password
+                    </button>
+                    <button id="saveAdminProfile" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let employees = [
+            {
+                id: 1,
+                name: 'Andi alviansyah',
+                email: 'andi@gmail.com',
+                password: '12345',
+                position: 'Staff',
+                address: 'Jakarta',
+                phone: '081234567890',
+                shift: 'shift1',
+                avatar: null
+            }
+        ];
+        
+        let admins = [
+            {
+                id: 1,
+                name: 'Administrator',
+                email: 'admin@gmail.com',
+                password: 'admin',
+                avatar: null
+            }
+        ];
+
+        let attendanceData = [];
+        let scheduleData = {};
+        let holidayRequests = [];
+        let systemSettings = {
+            logo: null,
+            background: null
+        };
+
+        // Shift configurations
+        const shifts = {
+            shift1: {
+                name: 'Shift 1',
+                start: '07:30',
+                end: '15:00',
+                breakDuration: 60, // minutes
+                breakOptions: ['Istirahat Pertama', 'Istirahat Kedua'],
+                finishActiveStart: '14:50',
+                finishActiveEnd: '15:20'
+            },
+            shift2: {
+                name: 'Shift 2',
+                start: '14:30',
+                end: '21:30',
+                breakDuration: 45,
+                breakOptions: ['Istirahat Pertama', 'Istirahat Kedua'],
+                finishActiveStart: '21:20',
+                finishActiveEnd: '21:50'
+            },
+            fulltime: {
+                name: 'Full Time',
+                start: '08:00',
+                end: '21:30',
+                breakDuration: 150, // 2.5 hours total
+                breakOptions: ['Istirahat Siang Pertama', 'Istirahat Siang Kedua', 'Istirahat Sore Pertama', 'Istirahat Sore Kedua', 'Istirahat Malam Pertama', 'Istirahat Malam Kedua'],
+                finishActiveStart: '21:20',
+                finishActiveEnd: '21:50'
+            },
+            libur: {
+                name: 'Libur',
+                start: null,
+                end: null
+            }
+        };
+
+        // Utility Functions
+        function getCurrentTime() {
+            return new Date().toLocaleTimeString('id-ID', { hour12: false });
+        }
+
+        function getCurrentDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('id-ID', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+            });
+        }
+
+        function isTimeInRange(current, start, end) {
+            return current >= start && current <= end;
+        }
+
+        function generateQRCode() {
+            const qr = qrcode(0, 'M');
+            qr.addData('otpauth://totp/AbsensiApp:' + currentUser.email + '?secret=JBSWY3DPEHPK3PXP&issuer=AbsensiApp');
+            qr.make();
+            return qr.createImgTag(4);
+        }
+
+        // Google Authenticator Functions
+        function generateAuthenticatorSecret() {
+            // Generate a random 32-character base32 secret
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let secret = '';
+            for (let i = 0; i < 32; i++) {
+                secret += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return secret;
+        }
+
+        function setupGoogleAuthenticator() {
+            const secret = generateAuthenticatorSecret();
+            const issuer = 'AbsensiApp';
+            const accountName = 'admin@gmail.com';
+            
+            systemSettings.authenticatorSecret = secret;
+            
+            // Generate QR code
+            const qr = qrcode(0, 'M');
+            const otpUrl = `otpauth://totp/${issuer}:${accountName}?secret=${secret}&issuer=${issuer}`;
+            qr.addData(otpUrl);
+            qr.make();
+            
+            systemSettings.authenticatorQR = qr.createImgTag(4);
+            
+            // Update UI
+            document.getElementById('qrCodeContainer').innerHTML = systemSettings.authenticatorQR;
+            document.getElementById('secretKey').value = secret;
+            
+            showNotification('Google Authenticator berhasil di-generate');
+        }
+
+        function copySecretKey() {
+            const secretInput = document.getElementById('secretKey');
+            secretInput.select();
+            document.execCommand('copy');
+            showNotification('Secret key berhasil disalin');
+        }
+
+        function printQRCode() {
+            if (!systemSettings.authenticatorQR) {
+                showNotification('Generate QR Code terlebih dahulu');
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Google Authenticator Setup - AbsensiApp</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                        .header { margin-bottom: 30px; }
+                        .qr-container { margin: 20px 0; }
+                        .instructions { text-align: left; max-width: 500px; margin: 0 auto; }
+                        .secret-key { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; word-break: break-all; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Google Authenticator Setup</h1>
+                        <h2>Sistem Absensi Karyawan</h2>
+                    </div>
+                    
+                    <div class="qr-container">
+                        ${systemSettings.authenticatorQR}
+                    </div>
+                    
+                    <div class="instructions">
+                        <h3>Cara Setup:</h3>
+                        <ol>
+                            <li>Download aplikasi Google Authenticator di smartphone</li>
+                            <li>Buka aplikasi dan pilih "Scan QR Code"</li>
+                            <li>Scan QR Code di atas</li>
+                            <li>Atau masukkan secret key secara manual:</li>
+                        </ol>
+                        
+                        <div class="secret-key">
+                            <strong>Secret Key:</strong><br>
+                            ${systemSettings.authenticatorSecret}
+                        </div>
+                        
+                        <p><strong>Penting:</strong> Simpan secret key ini dengan aman sebagai backup.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Notification System
+        let notifications = [];
+
+        function addNotification(title, message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: new Date(),
+                read: false
+            };
+            notifications.unshift(notification);
+            updateNotificationBadge();
+        }
+
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.querySelector('#notificationNavBtn .w-3.h-3');
+            if (badge) {
+                badge.style.display = unreadCount > 0 ? 'block' : 'none';
+            }
+        }
+
+        function populateNotifications() {
+            const notificationsList = document.getElementById('notificationsList');
+            notificationsList.innerHTML = '';
+            
+            if (notifications.length === 0) {
+                notificationsList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-bell-slash text-3xl mb-2 block"></i>
+                        <p>Tidak ada notifikasi</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            notifications.forEach(notification => {
+                const notifEl = document.createElement('div');
+                notifEl.className = `p-3 rounded-lg border ${notification.read ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'}`;
+                notifEl.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center ${
+                            notification.type === 'success' ? 'bg-green-100 text-green-600' :
+                            notification.type === 'warning' ? 'bg-orange-100 text-orange-600' :
+                            notification.type === 'error' ? 'bg-red-100 text-red-600' :
+                            'bg-blue-100 text-blue-600'
+                        }">
+                            <i class="fas ${
+                                notification.type === 'success' ? 'fa-check' :
+                                notification.type === 'warning' ? 'fa-exclamation' :
+                                notification.type === 'error' ? 'fa-times' :
+                                'fa-info'
+                            } text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-800">${notification.title}</h4>
+                            <p class="text-sm text-gray-600">${notification.message}</p>
+                            <p class="text-xs text-gray-400 mt-1">${notification.timestamp.toLocaleString('id-ID')}</p>
+                        </div>
+                        ${!notification.read ? '<div class="w-2 h-2 bg-blue-600 rounded-full"></div>' : ''}
+                    </div>
+                `;
+                
+                notifEl.addEventListener('click', () => {
+                    notification.read = true;
+                    updateNotificationBadge();
+                    populateNotifications();
+                });
+                
+                notificationsList.appendChild(notifEl);
+            });
+        }
+
+        // Holiday Request Management
+        function populateHolidayRequestsTable() {
+            const tbody = document.getElementById('holidayRequestsTableBody');
+            tbody.innerHTML = '';
+            
+            if (holidayRequests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Tidak ada request libur</td></tr>';
+                return;
+            }
+            
+            holidayRequests.forEach(request => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-2">${request.employeeName}</td>
+                    <td class="border border-gray-300 p-2">${new Date(request.id).toLocaleDateString('id-ID')}</td>
+                    <td class="border border-gray-300 p-2">${formatDate(request.date)}</td>
+                    <td class="border border-gray-300 p-2 text-center">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }">
+                            ${request.status === 'approved' ? 'Disetujui' :
+                              request.status === 'rejected' ? 'Ditolak' : 'Pending'}
+                        </span>
+                    </td>
+                    <td class="border border-gray-300 p-2 text-center">
+                        ${request.status === 'pending' ? `
+                            <button onclick="approveHolidayRequest(${request.id})" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs mr-1">
+                                Setujui
+                            </button>
+                            <button onclick="rejectHolidayRequest(${request.id})" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                Tolak
+                            </button>
+                        ` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function approveHolidayRequest(requestId) {
+            const request = holidayRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'approved';
+                
+                // Set employee schedule to holiday
+                const dateStr = request.date;
+                const scheduleKey = `${request.employeeId}-${dateStr}`;
+                scheduleData[scheduleKey] = 'libur';
+                
+                // Add notification
+                addNotification(
+                    'Request Libur Disetujui',
+                    `Request libur ${request.employeeName} untuk tanggal ${formatDate(request.date)} telah disetujui`,
+                    'success'
+                );
+                
+                populateHolidayRequestsTable();
+                showNotification('Request libur berhasil disetujui');
+            }
+        }
+
+        function rejectHolidayRequest(requestId) {
+            const request = holidayRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'rejected';
+                
+                // Add notification
+                addNotification(
+                    'Request Libur Ditolak',
+                    `Request libur ${request.employeeName} untuk tanggal ${formatDate(request.date)} telah ditolak`,
+                    'warning'
+                );
+                
+                populateHolidayRequestsTable();
+                showNotification('Request libur berhasil ditolak');
+            }
+        }
+
+        // Password Change Functions
+        function changePassword(currentPassword, newPassword, confirmPassword) {
+            if (newPassword !== confirmPassword) {
+                showNotification('Password baru dan konfirmasi tidak cocok');
+                return false;
+            }
+            
+            if (newPassword.length < 5) {
+                showNotification('Password baru minimal 5 karakter');
+                return false;
+            }
+            
+            if (currentUser.role === 'admin') {
+                const admin = admins.find(a => a.id === currentUser.id);
+                if (admin && admin.password === currentPassword) {
+                    admin.password = newPassword;
+                    currentUser.password = newPassword;
+                    showNotification('Password admin berhasil diubah');
+                    return true;
+                } else {
+                    showNotification('Password saat ini salah');
+                    return false;
+                }
+            } else {
+                const employee = employees.find(e => e.id === currentUser.id);
+                if (employee && employee.password === currentPassword) {
+                    employee.password = newPassword;
+                    currentUser.password = newPassword;
+                    showNotification('Password berhasil diubah');
+                    return true;
+                } else {
+                    showNotification('Password saat ini salah');
+                    return false;
+                }
+            }
+        }
+
+        // Authentication
+        function login(email, password) {
+            // Check admin
+            const admin = admins.find(a => a.email === email && a.password === password);
+            if (admin) {
+                currentUser = { ...admin, role: 'admin' };
+                showAdminDashboard();
+                return true;
+            }
+
+            // Check employee
+            const employee = employees.find(e => e.email === email && e.password === password);
+            if (employee) {
+                currentUser = { ...employee, role: 'employee' };
+                showEmployeeDashboard();
+                return true;
+            }
+
+            return false;
+        }
+
+        function logout() {
+            currentUser = null;
+            showLoginPage();
+        }
+
+        // Page Navigation
+        function showLoginPage() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('employeeDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function showEmployeeDashboard() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('employeeDashboard').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            updateEmployeeDashboard();
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('employeeDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            updateAdminDashboard();
+        }
+
+        // Employee Dashboard Functions
+        function updateEmployeeDashboard() {
+            const employee = employees.find(e => e.id === currentUser.id);
+            const shift = shifts[employee.shift] || shifts.shift1;
+            
+            document.getElementById('employeeName').textContent = employee.name;
+            document.getElementById('employeeShift').textContent = `${shift.name} • ${shift.start} - ${shift.end}`;
+            
+            // Update time and date for employee
+            updateEmployeeDateTime();
+            
+            updateEmployeeStatus();
+            updateTeamStatus();
+            checkAutoFinish();
+        }
+
+        function updateEmployeeDateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            const dateString = now.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short'
+            });
+            
+            const currentTimeEl = document.getElementById('currentTimeEmployee');
+            const currentDateEl = document.getElementById('currentDateEmployee');
+            
+            if (currentTimeEl) {
+                currentTimeEl.textContent = timeString;
+            }
+            if (currentDateEl) {
+                currentDateEl.textContent = dateString;
+            }
+        }
+
+        function updateEmployeeStatus() {
+            const today = getCurrentDate();
+            const attendance = attendanceData.find(a => a.employeeId === currentUser.id && a.date === today);
+            
+            let status = 'Belum Absen';
+            let indicator = 'bg-gray-400';
+            
+            if (attendance) {
+                if (attendance.finishTime) {
+                    status = 'Selesai Kerja';
+                    indicator = 'bg-blue-600';
+                } else if (attendance.breakTime) {
+                    status = 'Sedang Istirahat';
+                    indicator = 'bg-orange-500';
+                } else if (attendance.checkInTime) {
+                    status = 'Sudah Absen';
+                    indicator = 'status-online';
+                }
+            }
+            
+            document.getElementById('todayStatus').textContent = status;
+            document.getElementById('statusIndicator').className = `w-3 h-3 rounded-full ${indicator}`;
+            
+            updateActionButtons(attendance);
+        }
+
+        function updateActionButtons(attendance) {
+            const absenBtn = document.getElementById('absenBtn');
+            const istirahatBtn = document.getElementById('istirahatBtn');
+            const selesaiBtn = document.getElementById('selesaiBtn');
+            
+            if (!attendance) {
+                absenBtn.disabled = false;
+                istirahatBtn.disabled = true;
+                selesaiBtn.disabled = true;
+            } else if (attendance.checkInTime && !attendance.breakTime) {
+                absenBtn.disabled = true;
+                istirahatBtn.disabled = false;
+                selesaiBtn.disabled = false;
+            } else if (attendance.breakTime && !attendance.finishTime) {
+                absenBtn.disabled = true;
+                istirahatBtn.disabled = true;
+                selesaiBtn.disabled = false;
+            } else {
+                absenBtn.disabled = true;
+                istirahatBtn.disabled = true;
+                selesaiBtn.disabled = true;
+            }
+        }
+
+        function updateTeamStatus() {
+            const today = getCurrentDate();
+            const teamStatusEl = document.getElementById('teamStatus');
+            teamStatusEl.innerHTML = '';
+            
+            if (employees.length <= 1) {
+                teamStatusEl.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        <i class="fas fa-users text-2xl mb-2 block"></i>
+                        <p class="text-sm">Belum ada anggota tim lain</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            employees.forEach(emp => {
+                if (emp.id === currentUser.id) return;
+                
+                const attendance = attendanceData.find(a => a.employeeId === emp.id && a.date === today);
+                let status = 'Belum Absen';
+                let statusClass = 'text-gray-500';
+                let statusIcon = 'fas fa-clock';
+                let statusBg = 'bg-gray-100';
+                
+                if (attendance) {
+                    if (attendance.finishTime) {
+                        status = 'Selesai Kerja';
+                        statusClass = 'text-blue-600';
+                        statusIcon = 'fas fa-check-circle';
+                        statusBg = 'bg-blue-100';
+                    } else if (attendance.breakTime) {
+                        status = 'Istirahat';
+                        statusClass = 'text-orange-500';
+                        statusIcon = 'fas fa-coffee';
+                        statusBg = 'bg-orange-100';
+                    } else if (attendance.checkInTime) {
+                        status = 'Hadir';
+                        statusClass = 'text-green-600';
+                        statusIcon = 'fas fa-check';
+                        statusBg = 'bg-green-100';
+                    }
+                }
+                
+                const statusEl = document.createElement('div');
+                statusEl.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-xl';
+                statusEl.innerHTML = `
+                    <div class="w-10 h-10 ${statusBg} rounded-full flex items-center justify-center">
+                        <i class="${statusIcon} ${statusClass} text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-800">${emp.name}</p>
+                        <p class="text-xs text-gray-500">${emp.position}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs ${statusClass} font-medium">${status}</p>
+                        ${attendance && attendance.checkInTime ? `<p class="text-xs text-gray-400">${attendance.checkInTime}</p>` : ''}
+                    </div>
+                `;
+                teamStatusEl.appendChild(statusEl);
+            });
+        }
+
+        function checkAutoFinish() {
+            const employee = employees.find(e => e.id === currentUser.id);
+            const shift = shifts[employee.shift];
+            const currentTime = getCurrentTime();
+            const today = getCurrentDate();
+            
+            if (shift && shift.finishActiveEnd) {
+                const attendance = attendanceData.find(a => a.employeeId === currentUser.id && a.date === today);
+                
+                if (attendance && attendance.checkInTime && !attendance.finishTime && currentTime > shift.finishActiveEnd) {
+                    // Auto finish work
+                    attendance.finishTime = shift.end;
+                    updateEmployeeStatus();
+                    showNotification('Otomatis selesai kerja karena melewati batas waktu');
+                }
+            }
+        }
+
+        // Attendance Functions
+        function checkIn() {
+            showAuthenticatorModal('checkin');
+        }
+
+        function takeBreak() {
+            const employee = employees.find(e => e.id === currentUser.id);
+            const shift = shifts[employee.shift];
+            
+            if (shift.breakOptions && shift.breakOptions.length > 1) {
+                showBreakSelectionModal();
+            } else {
+                showAuthenticatorModal('break', 'Istirahat');
+            }
+        }
+
+        function finishWork() {
+            showAuthenticatorModal('finish');
+        }
+
+        function processAttendance(action, breakType = null) {
+            const today = getCurrentDate();
+            const currentTime = getCurrentTime();
+            
+            let attendance = attendanceData.find(a => a.employeeId === currentUser.id && a.date === today);
+            
+            if (!attendance) {
+                attendance = {
+                    id: Date.now(),
+                    employeeId: currentUser.id,
+                    date: today,
+                    checkInTime: null,
+                    breakTime: null,
+                    breakType: null,
+                    finishTime: null
+                };
+                attendanceData.push(attendance);
+            }
+            
+            switch (action) {
+                case 'checkin':
+                    attendance.checkInTime = currentTime;
+                    showNotification('Berhasil absen masuk');
+                    break;
+                case 'break':
+                    attendance.breakTime = currentTime;
+                    attendance.breakType = breakType;
+                    showNotification(`Berhasil mulai ${breakType}`);
+                    break;
+                case 'finish':
+                    attendance.finishTime = currentTime;
+                    showNotification('Berhasil selesai kerja');
+                    break;
+            }
+            
+            updateEmployeeStatus();
+            updateTeamStatus();
+        }
+
+        // Admin Functions
+        function updateAdminDashboard() {
+            updateAdminStats();
+            updateCurrentTime();
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            const dateString = now.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short'
+            });
+            
+            const currentTimeEl = document.getElementById('currentTime');
+            if (currentTimeEl) {
+                currentTimeEl.textContent = `${timeString} • ${dateString}`;
+            }
+        }
+
+        function updateAdminStats() {
+            const today = getCurrentDate();
+            const todayAttendance = attendanceData.filter(a => a.date === today);
+            
+            const presentCount = todayAttendance.filter(a => a.checkInTime).length;
+            const breakCount = todayAttendance.filter(a => a.breakTime && !a.finishTime).length;
+            
+            // Calculate late employees
+            const lateCount = todayAttendance.filter(a => {
+                if (!a.checkInTime) return false;
+                const employee = employees.find(e => e.id === a.employeeId);
+                const shift = shifts[employee.shift];
+                return a.checkInTime > shift.start;
+            }).length;
+            
+            document.getElementById('presentCount').textContent = presentCount;
+            document.getElementById('breakCount').textContent = breakCount;
+            document.getElementById('lateCount').textContent = lateCount;
+        }
+
+        function getLateEmployees(filter = 'today') {
+            let startDate, endDate;
+            const today = new Date();
+            
+            switch (filter) {
+                case 'today':
+                    startDate = endDate = getCurrentDate();
+                    break;
+                case 'week':
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay());
+                    startDate = weekStart.toISOString().split('T')[0];
+                    endDate = getCurrentDate();
+                    break;
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                    endDate = getCurrentDate();
+                    break;
+            }
+            
+            return attendanceData.filter(attendance => {
+                if (!attendance.checkInTime) return false;
+                if (attendance.date < startDate || attendance.date > endDate) return false;
+                
+                const employee = employees.find(e => e.id === attendance.employeeId);
+                if (!employee) return false;
+                
+                const shift = shifts[employee.shift];
+                if (!shift || !shift.start) return false;
+                
+                return attendance.checkInTime > shift.start;
+            }).map(attendance => {
+                const employee = employees.find(e => e.id === attendance.employeeId);
+                const shift = shifts[employee.shift];
+                
+                // Calculate late duration
+                const shiftStart = new Date(`2000-01-01 ${shift.start}`);
+                const checkInTime = new Date(`2000-01-01 ${attendance.checkInTime}`);
+                const lateDuration = Math.floor((checkInTime - shiftStart) / (1000 * 60)); // minutes
+                
+                return {
+                    ...attendance,
+                    employee,
+                    shift,
+                    lateDuration
+                };
+            });
+        }
+
+        function populateLateEmployeesTable(filter = 'today') {
+            const lateEmployees = getLateEmployees(filter);
+            const tbody = document.getElementById('lateEmployeesTableBody');
+            tbody.innerHTML = '';
+            
+            if (lateEmployees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-500">Tidak ada karyawan yang terlambat</td></tr>';
+                return;
+            }
+            
+            lateEmployees.forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-2">${data.employee.name}</td>
+                    <td class="border border-gray-300 p-2">${data.employee.position}</td>
+                    <td class="border border-gray-300 p-2">${formatDate(data.date)}</td>
+                    <td class="border border-gray-300 p-2 text-center">${data.shift.name}</td>
+                    <td class="border border-gray-300 p-2 text-center">${data.shift.start}</td>
+                    <td class="border border-gray-300 p-2 text-center">${data.checkInTime}</td>
+                    <td class="border border-gray-300 p-2 text-center text-red-600 font-medium">${data.lateDuration} menit</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function populateAttendanceTable(filter = 'today') {
+            let filteredData = [];
+            const today = new Date();
+            
+            switch (filter) {
+                case 'today':
+                    filteredData = attendanceData.filter(a => a.date === getCurrentDate());
+                    break;
+                case 'week':
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay());
+                    const weekStartStr = weekStart.toISOString().split('T')[0];
+                    filteredData = attendanceData.filter(a => a.date >= weekStartStr && a.date <= getCurrentDate());
+                    break;
+                case 'month':
+                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                    filteredData = attendanceData.filter(a => a.date >= monthStart && a.date <= getCurrentDate());
+                    break;
+            }
+            
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = '';
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">Tidak ada data absensi</td></tr>';
+                return;
+            }
+            
+            filteredData.forEach(attendance => {
+                const employee = employees.find(e => e.id === attendance.employeeId);
+                if (!employee) return;
+                
+                let status = 'Belum Lengkap';
+                let statusClass = 'text-orange-600';
+                
+                if (attendance.finishTime) {
+                    status = 'Lengkap';
+                    statusClass = 'text-green-600';
+                } else if (attendance.breakTime) {
+                    status = 'Istirahat';
+                    statusClass = 'text-blue-600';
+                } else if (attendance.checkInTime) {
+                    status = 'Hadir';
+                    statusClass = 'text-green-600';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-2">${employee.name}</td>
+                    <td class="border border-gray-300 p-2">${formatDate(attendance.date)}</td>
+                    <td class="border border-gray-300 p-2 text-center">${attendance.checkInTime || '-'}</td>
+                    <td class="border border-gray-300 p-2 text-center">${attendance.breakTime || '-'}</td>
+                    <td class="border border-gray-300 p-2 text-center">${attendance.finishTime || '-'}</td>
+                    <td class="border border-gray-300 p-2 text-center">
+                        <span class="${statusClass} font-medium">${status}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function addEmployee(employeeData) {
+            const newEmployee = {
+                id: Date.now(),
+                name: employeeData.fullName,
+                email: employeeData.email,
+                password: employeeData.password,
+                position: employeeData.position,
+                address: employeeData.address,
+                phone: employeeData.phone,
+                shift: 'shift1', // Default shift
+                avatar: null
+            };
+            
+            employees.push(newEmployee);
+            showNotification('Karyawan berhasil ditambahkan');
+            closeModal('addEmployeeModal');
+        }
+
+        // Schedule Management
+        function generateScheduleDates() {
+            const dates = [];
+            const today = new Date();
+            
+            for (let i = 0; i < 10; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                dates.push(date);
+            }
+            
+            return dates;
+        }
+
+        function populateScheduleTable() {
+            const dates = generateScheduleDates();
+            
+            // Update header dates
+            dates.forEach((date, index) => {
+                const headerEl = document.getElementById(`scheduleDate${index + 1}`);
+                if (headerEl) {
+                    headerEl.textContent = formatDate(date);
+                }
+                
+                const empHeaderEl = document.getElementById(`empScheduleDate${index + 1}`);
+                if (empHeaderEl) {
+                    empHeaderEl.textContent = formatDate(date);
+                }
+            });
+            
+            // Populate employee rows
+            const tbody = document.getElementById('scheduleTableBody');
+            const empTbody = document.getElementById('empScheduleTableBody');
+            tbody.innerHTML = '';
+            empTbody.innerHTML = '';
+            
+            employees.forEach(employee => {
+                const row = document.createElement('tr');
+                const empRow = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-2">${employee.name}</td>
+                    <td class="border border-gray-300 p-2">${employee.position}</td>
+                `;
+                
+                empRow.innerHTML = `
+                    <td class="border border-gray-300 p-2">${employee.name}</td>
+                    <td class="border border-gray-300 p-2">${employee.position}</td>
+                `;
+                
+                dates.forEach((date, index) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const scheduleKey = `${employee.id}-${dateStr}`;
+                    const currentSchedule = scheduleData[scheduleKey] || 'shift1';
+                    
+                    const cell = document.createElement('td');
+                    cell.className = 'border border-gray-300 p-1';
+                    cell.innerHTML = `
+                        <select class="w-full text-xs p-1 border-0 bg-transparent" data-employee="${employee.id}" data-date="${dateStr}">
+                            <option value="shift1" ${currentSchedule === 'shift1' ? 'selected' : ''}>Shift 1</option>
+                            <option value="shift2" ${currentSchedule === 'shift2' ? 'selected' : ''}>Shift 2</option>
+                            <option value="fulltime" ${currentSchedule === 'fulltime' ? 'selected' : ''}>Full Time</option>
+                            <option value="libur" ${currentSchedule === 'libur' ? 'selected' : ''}>Libur</option>
+                        </select>
+                    `;
+                    
+                    const empCell = document.createElement('td');
+                    empCell.className = 'border border-gray-300 p-2 text-center text-xs';
+                    empCell.textContent = shifts[currentSchedule].name;
+                    
+                    row.appendChild(cell);
+                    empRow.appendChild(empCell);
+                });
+                
+                tbody.appendChild(row);
+                empTbody.appendChild(empRow);
+            });
+        }
+
+        function saveSchedule() {
+            const selects = document.querySelectorAll('#scheduleTableBody select');
+            
+            selects.forEach(select => {
+                const employeeId = parseInt(select.dataset.employee);
+                const date = select.dataset.date;
+                const shift = select.value;
+                const scheduleKey = `${employeeId}-${date}`;
+                
+                scheduleData[scheduleKey] = shift;
+                
+                // Update employee's current shift if it's today
+                const today = getCurrentDate();
+                if (date === today) {
+                    const employee = employees.find(e => e.id === employeeId);
+                    if (employee) {
+                        employee.shift = shift;
+                    }
+                }
+            });
+            
+            showNotification('Jadwal berhasil disimpan');
+            populateScheduleTable(); // Refresh the employee view
+        }
+
+        // Holiday Request Functions
+        function populateHolidayCalendar() {
+            const calendar = document.getElementById('holidayCalendar');
+            calendar.innerHTML = '';
+            
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day';
+                calendar.appendChild(emptyDay);
+            }
+            
+            // Add days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                
+                // Check if there are holiday requests for this date
+                const requests = holidayRequests.filter(r => r.date === dateStr);
+                
+                if (requests.length > 0) {
+                    dayEl.classList.add('has-request');
+                    dayEl.innerHTML = `
+                        <span>${day}</span>
+                        <span class="request-name">${requests[0].employeeName}</span>
+                    `;
+                } else {
+                    dayEl.textContent = day;
+                }
+                
+                calendar.appendChild(dayEl);
+            }
+        }
+
+        function submitHolidayRequest() {
+            const dateInput = document.getElementById('holidayDate');
+            const selectedDate = dateInput.value;
+            
+            if (!selectedDate) {
+                showNotification('Pilih tanggal terlebih dahulu');
+                return;
+            }
+            
+            // Check if date is already requested by someone else
+            const existingRequest = holidayRequests.find(r => r.date === selectedDate);
+            if (existingRequest) {
+                showNotification(`Tanggal sudah direquest oleh ${existingRequest.employeeName}`);
+                return;
+            }
+            
+            const employee = employees.find(e => e.id === currentUser.id);
+            const newRequest = {
+                id: Date.now(),
+                employeeId: currentUser.id,
+                employeeName: employee.name,
+                date: selectedDate,
+                status: 'pending'
+            };
+            
+            holidayRequests.push(newRequest);
+            showNotification('Request libur berhasil disubmit');
+            populateHolidayCalendar();
+            closeModal('holidayRequestModal');
+        }
+
+        // Modal Functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showAuthenticatorModal(action, breakType = null) {
+            const modal = document.getElementById('authenticatorModal');
+            
+            modal.classList.remove('hidden');
+            
+            // Store action for verification
+            modal.dataset.action = action;
+            modal.dataset.breakType = breakType;
+            
+            // Focus on input field
+            setTimeout(() => {
+                document.getElementById('authCode').focus();
+            }, 100);
+        }
+
+        function showBreakSelectionModal() {
+            const modal = document.getElementById('breakSelectionModal');
+            const optionsEl = document.getElementById('breakOptions');
+            
+            const employee = employees.find(e => e.id === currentUser.id);
+            const shift = shifts[employee.shift];
+            
+            optionsEl.innerHTML = '';
+            
+            shift.breakOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100';
+                button.textContent = option;
+                button.onclick = () => {
+                    closeModal('breakSelectionModal');
+                    showAuthenticatorModal('break', option);
+                };
+                optionsEl.appendChild(button);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        function verifyAuthenticatorCode() {
+            const code = document.getElementById('authCode').value;
+            
+            // Simple verification (in real app, this would verify against TOTP)
+            if (code.length === 6) {
+                const modal = document.getElementById('authenticatorModal');
+                const action = modal.dataset.action;
+                const breakType = modal.dataset.breakType;
+                
+                processAttendance(action, breakType);
+                closeModal('authenticatorModal');
+                document.getElementById('authCode').value = '';
+            } else {
+                showNotification('Kode verifikasi tidak valid');
+            }
+        }
+
+        // Notification Function
+        function showNotification(message) {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Settings Functions
+        function applySystemSettings() {
+            const logoUpload = document.getElementById('logoUpload');
+            const backgroundUpload = document.getElementById('backgroundUpload');
+            
+            if (logoUpload.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    systemSettings.logo = e.target.result;
+                    updateLogo();
+                    showNotification('Logo berhasil diperbarui');
+                };
+                reader.readAsDataURL(logoUpload.files[0]);
+            }
+            
+            if (backgroundUpload.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    systemSettings.background = e.target.result;
+                    updateBackground();
+                    showNotification('Background berhasil diperbarui');
+                };
+                reader.readAsDataURL(backgroundUpload.files[0]);
+            }
+            
+            if (!logoUpload.files[0] && !backgroundUpload.files[0]) {
+                showNotification('Pilih file untuk diubah');
+            }
+        }
+
+        function updateLogo() {
+            const logoContainer = document.getElementById('logoContainer');
+            if (systemSettings.logo) {
+                logoContainer.innerHTML = `<img src="${systemSettings.logo}" alt="Logo" class="w-full h-full object-cover rounded-full">`;
+            } else {
+                logoContainer.innerHTML = '<i class="fas fa-building text-white text-2xl"></i>';
+            }
+        }
+
+        function updateBackground() {
+            if (systemSettings.background) {
+                document.body.style.backgroundImage = `url(${systemSettings.background})`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            } else {
+                document.body.style.backgroundImage = '';
+            }
+        }
+
+        function resetSystemSettings() {
+            systemSettings.logo = null;
+            systemSettings.background = null;
+            updateLogo();
+            updateBackground();
+            document.getElementById('logoUpload').value = '';
+            document.getElementById('backgroundUpload').value = '';
+            showNotification('Pengaturan berhasil direset');
+        }
+
+        // Export Functions
+        function exportToExcel() {
+            // Simple CSV export
+            let csv = 'Nama,Email,Jabatan,Tanggal,Absen Masuk,Istirahat,Selesai Kerja\n';
+            
+            attendanceData.forEach(attendance => {
+                const employee = employees.find(e => e.id === attendance.employeeId);
+                if (employee) {
+                    csv += `${employee.name},${employee.email},${employee.position},${attendance.date},${attendance.checkInTime || ''},${attendance.breakTime || ''},${attendance.finishTime || ''}\n`;
+                }
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data-absensi.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function exportToPDF() {
+            // Simple PDF export using print
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head><title>Data Absensi</title></head>
+                <body>
+                    <h1>Data Absensi Karyawan</h1>
+                    <table border="1" style="border-collapse: collapse; width: 100%;">
+                        <tr>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Jabatan</th>
+                            <th>Tanggal</th>
+                            <th>Absen Masuk</th>
+                            <th>Istirahat</th>
+                            <th>Selesai Kerja</th>
+                        </tr>
+                        ${attendanceData.map(attendance => {
+                            const employee = employees.find(e => e.id === attendance.employeeId);
+                            return employee ? `
+                                <tr>
+                                    <td>${employee.name}</td>
+                                    <td>${employee.email}</td>
+                                    <td>${employee.position}</td>
+                                    <td>${attendance.date}</td>
+                                    <td>${attendance.checkInTime || ''}</td>
+                                    <td>${attendance.breakTime || ''}</td>
+                                    <td>${attendance.finishTime || ''}</td>
+                                </tr>
+                            ` : '';
+                        }).join('')}
+                    </table>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                if (login(email, password)) {
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                } else {
+                    showNotification('Email atau password salah');
+                }
+            });
+
+            // Employee dashboard buttons
+            document.getElementById('absenBtn').addEventListener('click', checkIn);
+            document.getElementById('istirahatBtn').addEventListener('click', takeBreak);
+            document.getElementById('selesaiBtn').addEventListener('click', finishWork);
+            document.getElementById('requestLiburBtn').addEventListener('click', () => {
+                populateHolidayCalendar();
+                showModal('holidayRequestModal');
+            });
+            document.getElementById('viewScheduleBtn').addEventListener('click', () => {
+                populateScheduleTable();
+                showModal('employeeScheduleModal');
+            });
+
+            // Employee profile and navigation
+            document.getElementById('employeeProfileBtn').addEventListener('click', () => showModal('employeeProfileModal'));
+            const profileNavBtn = document.getElementById('profileNavBtn');
+            if (profileNavBtn) {
+                profileNavBtn.addEventListener('click', () => showModal('employeeProfileModal'));
+            }
+            const scheduleNavBtn = document.getElementById('scheduleNavBtn');
+            if (scheduleNavBtn) {
+                scheduleNavBtn.addEventListener('click', () => {
+                    populateScheduleTable();
+                    showModal('employeeScheduleModal');
+                });
+            }
+            const notificationNavBtn = document.getElementById('notificationNavBtn');
+            if (notificationNavBtn) {
+                notificationNavBtn.addEventListener('click', () => {
+                    showNotification('Tidak ada notifikasi baru');
+                });
+            }
+            document.getElementById('employeeLogoutBtn').addEventListener('click', logout);
+
+            // Admin dashboard buttons
+            document.getElementById('addEmployeeBtn').addEventListener('click', () => showModal('addEmployeeModal'));
+            document.getElementById('manageScheduleBtn').addEventListener('click', () => {
+                populateScheduleTable();
+                showModal('scheduleModal');
+            });
+            document.getElementById('viewAttendanceBtn').addEventListener('click', () => {
+                populateAttendanceTable('today');
+                showModal('attendanceDataModal');
+            });
+            document.getElementById('viewLateEmployeesBtn').addEventListener('click', () => {
+                populateLateEmployeesTable('today');
+                showModal('lateEmployeesModal');
+            });
+            document.getElementById('exportDataBtn').addEventListener('click', () => showModal('adminSettingsModal'));
+            document.getElementById('adminSettingsBtn').addEventListener('click', () => showModal('adminSettingsModal'));
+            document.getElementById('adminProfileBtn').addEventListener('click', () => showModal('adminProfileModal'));
+            document.getElementById('adminLogoutBtn').addEventListener('click', logout);
+            
+            // Holiday requests button
+            const holidayRequestsBtn = document.getElementById('holidayRequestsBtn');
+            if (holidayRequestsBtn) {
+                holidayRequestsBtn.addEventListener('click', () => {
+                    populateHolidayRequestsTable();
+                    showModal('holidayRequestsModal');
+                });
+            }
+
+            // Admin dropdown menu
+            document.getElementById('adminMenuBtn').addEventListener('click', function() {
+                const dropdown = document.getElementById('adminDropdown');
+                dropdown.classList.toggle('hidden');
+            });
+
+            // Mobile navigation buttons
+            document.getElementById('mobileStatsBtn').addEventListener('click', () => showModal('attendanceDataModal'));
+            document.getElementById('mobileEmployeesBtn').addEventListener('click', () => showModal('addEmployeeModal'));
+            document.getElementById('mobileSettingsBtn').addEventListener('click', () => showModal('adminSettingsModal'));
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                const dropdown = document.getElementById('adminDropdown');
+                const menuBtn = document.getElementById('adminMenuBtn');
+                if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // Add employee form
+            document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const employeeData = {
+                    fullName: formData.get('fullName') || document.getElementById('fullName').value,
+                    address: formData.get('address') || document.getElementById('address').value,
+                    position: formData.get('position') || document.getElementById('position').value,
+                    email: formData.get('email') || document.getElementById('employeeEmail').value,
+                    phone: formData.get('phone') || document.getElementById('phoneNumber').value,
+                    password: formData.get('password') || document.getElementById('employeePassword').value
+                };
+                addEmployee(employeeData);
+                this.reset();
+            });
+
+            // Schedule management
+            document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
+            
+            const exportScheduleBtn = document.getElementById('exportScheduleBtn');
+            if (exportScheduleBtn) {
+                exportScheduleBtn.addEventListener('click', function() {
+                    // Simple schedule export
+                    let csv = 'Nama,Jabatan';
+                    const dates = generateScheduleDates();
+                    dates.forEach(date => {
+                        csv += `,${formatDate(date)}`;
+                    });
+                    csv += '\n';
+                    
+                    employees.forEach(employee => {
+                        csv += `${employee.name},${employee.position}`;
+                        dates.forEach(date => {
+                            const dateStr = date.toISOString().split('T')[0];
+                            const scheduleKey = `${employee.id}-${dateStr}`;
+                            const shift = scheduleData[scheduleKey] || 'shift1';
+                            csv += `,${shifts[shift].name}`;
+                        });
+                        csv += '\n';
+                    });
+                    
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'jadwal-karyawan.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showNotification('Jadwal berhasil diexport');
+                });
+            }
+
+            // Holiday request
+            document.getElementById('submitHolidayRequest').addEventListener('click', submitHolidayRequest);
+
+            // Authenticator verification
+            document.getElementById('verifyAuthCode').addEventListener('click', verifyAuthenticatorCode);
+
+            // Settings functions
+            document.getElementById('applyChanges').addEventListener('click', applySystemSettings);
+            document.getElementById('resetSettings').addEventListener('click', resetSystemSettings);
+            
+            // Filters
+            const lateFilter = document.getElementById('lateFilter');
+            if (lateFilter) {
+                lateFilter.addEventListener('change', function() {
+                    populateLateEmployeesTable(this.value);
+                });
+            }
+            
+            const attendanceFilter = document.getElementById('attendanceFilter');
+            if (attendanceFilter) {
+                attendanceFilter.addEventListener('change', function() {
+                    populateAttendanceTable(this.value);
+                });
+            }
+
+            // Export functions
+            document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+            document.getElementById('exportPDF').addEventListener('click', exportToPDF);
+            
+            // Save admin profile
+            const saveAdminProfileBtn = document.getElementById('saveAdminProfile');
+            if (saveAdminProfileBtn) {
+                saveAdminProfileBtn.addEventListener('click', function() {
+                    const name = document.getElementById('adminName').value;
+                    if (name && currentUser) {
+                        const admin = admins.find(a => a.id === currentUser.id);
+                        if (admin) {
+                            admin.name = name;
+                            currentUser.name = name;
+                        }
+                        showNotification('Profil berhasil diperbarui');
+                        closeModal('adminProfileModal');
+                    }
+                });
+            }
+
+            // Close modal buttons
+            const closeButtons = [
+                { id: 'closeEmployeeProfile', modal: 'employeeProfileModal' },
+                { id: 'closeAddEmployee', modal: 'addEmployeeModal' },
+                { id: 'closeSchedule', modal: 'scheduleModal' },
+                { id: 'closeHolidayRequest', modal: 'holidayRequestModal' },
+                { id: 'closeAuthenticator', modal: 'authenticatorModal' },
+                { id: 'closeBreakSelection', modal: 'breakSelectionModal' },
+                { id: 'closeAdminSettings', modal: 'adminSettingsModal' },
+                { id: 'closeEmployeeSchedule', modal: 'employeeScheduleModal' },
+                { id: 'closeAttendanceData', modal: 'attendanceDataModal' },
+                { id: 'closeLateEmployees', modal: 'lateEmployeesModal' },
+                { id: 'closeAdminProfile', modal: 'adminProfileModal' }
+            ];
+
+            closeButtons.forEach(({ id, modal }) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', () => closeModal(modal));
+                }
+            });
+
+            // Initialize app
+            showLoginPage();
+            updateLogo();
+            updateBackground();
+            
+            // Auto-update every minute
+            setInterval(() => {
+                if (currentUser && currentUser.role === 'employee') {
+                    updateEmployeeDashboard();
+                } else if (currentUser && currentUser.role === 'admin') {
+                    updateAdminDashboard();
+                }
+            }, 60000);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9900e8f660a5b2df',t:'MTc2MDcxNTc5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

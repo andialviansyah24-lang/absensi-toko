@@ -973,6 +973,123 @@
             </div>
         </div>
     </div>
+    <!-- Google Authenticator Setup Modal -->
+        <div id="authenticatorSetupModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Setup Google Authenticator</h3>
+                    <button id="closeAuthenticatorSetup" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <i class="fas fa-qrcode text-blue-600 text-2xl"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">Scan QR Code dengan Google Authenticator</p>
+                    
+                    <div id="qrCodeContainer" class="bg-gray-100 p-4 rounded-lg mb-4 min-h-[200px] flex items-center justify-center">
+                        <p class="text-gray-500">QR Code akan muncul di sini</p>
+                    </div>
+                    
+                    <div class="text-left mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Secret Key (Manual Entry)</label>
+                        <div class="flex">
+                            <input type="text" id="secretKey" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50 text-sm font-mono">
+                            <button id="copySecret" class="px-3 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2">
+                    <button id="generateAuthenticator" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm">
+                        <i class="fas fa-refresh mr-2"></i>Generate
+                    </button>
+                    <button id="printQRCode" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm">
+                        <i class="fas fa-print mr-2"></i>Print PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Ubah Password</h3>
+                    <button id="closeChangePassword" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="changePasswordForm" class="space-y-4">
+                    <div>
+                        <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">Password Saat Ini</label>
+                        <input type="password" id="currentPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+                        <input type="password" id="newPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password Baru</label>
+                        <input type="password" id="confirmPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium">
+                        Ubah Password
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Holiday Requests Management Modal -->
+        <div id="holidayRequestsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Kelola Request Libur</h3>
+                    <button id="closeHolidayRequests" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 p-2 text-left">Nama Karyawan</th>
+                                <th class="border border-gray-300 p-2 text-left">Tanggal Request</th>
+                                <th class="border border-gray-300 p-2 text-left">Tanggal Libur</th>
+                                <th class="border border-gray-300 p-2 text-center">Status</th>
+                                <th class="border border-gray-300 p-2 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holidayRequestsTableBody">
+                            <!-- Holiday requests will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Modal -->
+        <div id="notificationsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Notifikasi</h3>
+                    <button id="closeNotifications" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div id="notificationsList" class="space-y-3">
+                    <!-- Notifications will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Application State
@@ -2289,6 +2406,37 @@
                     showModal('holidayRequestsModal');
                 });
             }
+            // Google Authenticator setup
+            document.getElementById('setupAuthenticator').addEventListener('click', () => showModal('authenticatorSetupModal'));
+            document.getElementById('generateAuthenticator').addEventListener('click', setupGoogleAuthenticator);
+            document.getElementById('copySecret').addEventListener('click', copySecretKey);
+            document.getElementById('printQRCode').addEventListener('click', printQRCode);
+
+            // Password change buttons
+            document.getElementById('changeAdminPassword').addEventListener('click', () => showModal('changePasswordModal'));
+            document.getElementById('changeEmployeePassword').addEventListener('click', () => showModal('changePasswordModal'));
+
+            // Change password form
+            document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (changePassword(currentPassword, newPassword, confirmPassword)) {
+                    closeModal('changePasswordModal');
+                    this.reset();
+                }
+            });
+
+            // Notification button
+            const notificationNavBtn = document.getElementById('notificationNavBtn');
+            if (notificationNavBtn) {
+                notificationNavBtn.addEventListener('click', () => {
+                    populateNotifications();
+                    showModal('notificationsModal');
+                });
+            }
 
             // Admin dropdown menu
             document.getElementById('adminMenuBtn').addEventListener('click', function() {
@@ -2408,7 +2556,7 @@
                 });
             }
 
-            // Close modal buttons
+           // Close modal buttons
             const closeButtons = [
                 { id: 'closeEmployeeProfile', modal: 'employeeProfileModal' },
                 { id: 'closeAddEmployee', modal: 'addEmployeeModal' },
@@ -2420,7 +2568,11 @@
                 { id: 'closeEmployeeSchedule', modal: 'employeeScheduleModal' },
                 { id: 'closeAttendanceData', modal: 'attendanceDataModal' },
                 { id: 'closeLateEmployees', modal: 'lateEmployeesModal' },
-                { id: 'closeAdminProfile', modal: 'adminProfileModal' }
+                { id: 'closeAdminProfile', modal: 'adminProfileModal' },
+                { id: 'closeAuthenticatorSetup', modal: 'authenticatorSetupModal' },
+                { id: 'closeChangePassword', modal: 'changePasswordModal' },
+                { id: 'closeHolidayRequests', modal: 'holidayRequestsModal' },
+                { id: 'closeNotifications', modal: 'notificationsModal' }
             ];
 
             closeButtons.forEach(({ id, modal }) => {
@@ -2434,7 +2586,12 @@
             showLoginPage();
             updateLogo();
             updateBackground();
-            
+            // Add sample notifications
+            addNotification(
+                'Selamat Datang',
+                'Sistem absensi telah siap digunakan. Pastikan Google Authenticator sudah disetup.',
+                'info'
+            );
             // Auto-update every minute
             setInterval(() => {
                 if (currentUser && currentUser.role === 'employee') {
